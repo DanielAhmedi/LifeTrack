@@ -7,9 +7,76 @@
     <string name="nav_achievements">Достижения</string>
 
     <string name="action_back">Назад</string>
+    <string name="action_retry">Повторить</string>
+    <string name="action_save">Сохранить</string>
+    <string name="action_cancel">Отмена</string>
+    <string name="action_delete">Удалить</string>
+    <string name="action_edit">Редактировать</string>
+    <string name="action_pause">Приостановить</string>
+    <string name="action_resume">Возобновить</string>
+    <string name="action_stay">Остаться</string>
+    <string name="action_leave">Выйти</string>
+    <string name="action_create_habit">Создать привычку</string>
+    <string name="action_habit_menu">Меню привычки</string>
     <string name="settings_title">Настройки</string>
 
-    <string name="home_description">Здесь появятся привычки, запланированные на сегодня, и прогресс дня.</string>
+    <string name="home_mode_today">Сегодня</string>
+    <string name="home_mode_all">Все привычки</string>
+    <string name="home_progress">Выполнено %1$d из %2$d</string>
+    <string name="home_no_habits_today">На сегодня привычек нет</string>
+    <string name="home_summary">Всего: %1$d · активно: %2$d · приостановлено: %3$d</string>
+    <string name="home_empty_today_title">Пока нет привычек на сегодня</string>
+    <string name="home_empty_today_description">Создайте первую привычку и отмечайте её каждый день</string>
+    <string name="home_empty_all_title">Привычек пока нет</string>
+    <string name="home_empty_all_description">Создайте первую привычку и отмечайте её каждый день</string>
+    <string name="home_load_error_title">Не удалось загрузить привычки</string>
+    <string name="home_load_error_description">Проверьте свободное место и повторите попытку</string>
+
+    <string name="label_no_category">Без категории</string>
+    <string name="label_paused">Приостановлена</string>
+    <string name="frequency_daily">Каждый день</string>
+
+    <string name="habit_created">Привычка создана</string>
+    <string name="habit_updated">Изменения сохранены</string>
+    <string name="habit_deleted">Привычка удалена</string>
+    <string name="habit_paused">Привычка приостановлена</string>
+    <string name="habit_resumed">Привычка возобновлена</string>
+    <string name="habit_action_failed">Не удалось изменить привычку</string>
+    <string name="habit_save_failed">Не удалось сохранить привычку</string>
+
+    <string name="delete_habit_title">Удалить привычку?</string>
+    <string name="delete_habit_message">Вся история выполнения будет удалена без возможности восстановления</string>
+
+    <string name="editor_title_new">Новая привычка</string>
+    <string name="editor_title_edit">Редактирование</string>
+    <string name="editor_section_main">Основное</string>
+    <string name="editor_section_appearance">Оформление</string>
+    <string name="editor_section_frequency">Периодичность</string>
+    <string name="editor_section_activity">Активность</string>
+    <string name="editor_name_label">Название</string>
+    <string name="editor_description_label">Описание</string>
+    <string name="editor_counter">%1$d / %2$d</string>
+    <string name="editor_error_name_required">Введите название привычки</string>
+    <string name="editor_error_name_too_long">Не более 60 символов</string>
+    <string name="editor_error_description_too_long">Не более 255 символов</string>
+    <string name="editor_error_choose_day">Выберите хотя бы один день</string>
+    <string name="editor_error_interval">Интервал от 2 до 30 дней</string>
+    <string name="editor_interval_label">Дней</string>
+    <string name="editor_interval_decrease">Уменьшить интервал</string>
+    <string name="editor_interval_increase">Увеличить интервал</string>
+    <string name="editor_frequency_daily">Ежедневно</string>
+    <string name="editor_frequency_weekly">По дням недели</string>
+    <string name="editor_frequency_interval">С интервалом</string>
+    <string name="editor_active_switch">Привычка активна</string>
+    <string name="editor_frequency_warning">Изменение периодичности влияет на расчёт статистики за прошлые периоды</string>
+    <string name="editor_preview_name">Название привычки</string>
+    <string name="editor_icon_option">Иконка %1$d</string>
+    <string name="editor_discard_title">Выйти без сохранения?</string>
+    <string name="editor_discard_message">Введённые изменения не будут сохранены</string>
+    <string name="editor_not_found_title">Привычка не найдена</string>
+    <string name="editor_load_error_title">Не удалось загрузить привычку</string>
+    <string name="editor_load_error_description">Проверьте свободное место и повторите попытку</string>
+
     <string name="calendar_description">Здесь появится календарь активности по месяцам.</string>
     <string name="statistics_description">Здесь появится статистика за неделю, месяц и всё время.</string>
     <string name="achievements_description">Здесь появятся открытые и закрытые достижения.</string>
