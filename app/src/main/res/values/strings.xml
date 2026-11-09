@@ -1,3 +1,17 @@
 <resources>
     <string name="app_name">LifeTrack</string>
+
+    <string name="nav_home">Сегодня</string>
+    <string name="nav_calendar">Календарь</string>
+    <string name="nav_statistics">Статистика</string>
+    <string name="nav_achievements">Достижения</string>
+
+    <string name="action_back">Назад</string>
+    <string name="settings_title">Настройки</string>
+
+    <string name="home_description">Здесь появятся привычки, запланированные на сегодня, и прогресс дня.</string>
+    <string name="calendar_description">Здесь появится календарь активности по месяцам.</string>
+    <string name="statistics_description">Здесь появится статистика за неделю, месяц и всё время.</string>
+    <string name="achievements_description">Здесь появятся открытые и закрытые достижения.</string>
+    <string name="settings_description">Здесь появятся настройки оформления и напоминаний.</string>
 </resources>
