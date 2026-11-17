@@ -7,12 +7,20 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.lifetrack.R
 import com.example.lifetrack.di.AppContainer
+import com.example.lifetrack.domain.model.CompletionStatus
 import com.example.lifetrack.domain.model.Habit
 import com.example.lifetrack.domain.model.HabitCategory
+import com.example.lifetrack.domain.model.HabitCompletion
+import com.example.lifetrack.domain.progress.DayProgress
+import com.example.lifetrack.domain.progress.HabitStreak
+import com.example.lifetrack.domain.progress.calculateDayProgress
+import com.example.lifetrack.domain.progress.calculateHabitStreak
 import com.example.lifetrack.domain.repository.HabitCategoryRepository
+import com.example.lifetrack.domain.repository.HabitCompletionRepository
 import com.example.lifetrack.domain.repository.HabitRepository
 import com.example.lifetrack.domain.schedule.isScheduledOn
 import java.time.LocalDate
+import java.time.ZoneId
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -30,12 +38,14 @@ import kotlinx.coroutines.launch
 private data class HomeData(
     val habits: List<Habit>,
     val categories: List<HabitCategory>,
+    val completions: List<HabitCompletion>,
     val isError: Boolean = false
 )
 
 class HomeViewModel(
     private val habitRepository: HabitRepository,
-    private val habitCategoryRepository: HabitCategoryRepository
+    private val habitCategoryRepository: HabitCategoryRepository,
+    private val habitCompletionRepository: HabitCompletionRepository
 ) : ViewModel() {
 
     private val mode = MutableStateFlow(HomeMode.TODAY)
@@ -48,11 +58,19 @@ class HomeViewModel(
     private val data: Flow<HomeData> = reloadTrigger.flatMapLatest {
         combine(
             habitRepository.observeAll(),
-            habitCategoryRepository.observeAll()
-        ) { habits, categories ->
-            HomeData(habits = habits, categories = categories)
+            habitCategoryRepository.observeAll(),
+            habitCompletionRepository.observeAll()
+        ) { habits, categories, completions ->
+            HomeData(habits = habits, categories = categories, completions = completions)
         }.catch {
-            emit(HomeData(habits = emptyList(), categories = emptyList(), isError = true))
+            emit(
+                HomeData(
+                    habits = emptyList(),
+                    categories = emptyList(),
+                    completions = emptyList(),
+                    isError = true
+                )
+            )
         }
     }
 
@@ -93,16 +111,94 @@ class HomeViewModel(
         }
     }
 
+    fun toggleDone(habit: Habit) {
+        if (!canMarkToday(habit)) return
+        viewModelScope.launch {
+            runCatching {
+                val today = LocalDate.now().toEpochDay()
+                val existing = habitCompletionRepository.getByHabitAndDate(habit.id, today)
+                when {
+                    existing == null -> insertCompletion(habit.id, today, CompletionStatus.DONE)
+                    existing.status == CompletionStatus.DONE ->
+                        habitCompletionRepository.deleteById(existing.id)
+
+                    else -> habitCompletionRepository.update(
+                        existing.copy(status = CompletionStatus.DONE)
+                    )
+                }
+            }.onFailure { messagesFlow.emit(R.string.completion_failed) }
+        }
+    }
+
+    fun markSkipped(habit: Habit) {
+        if (!canMarkToday(habit)) return
+        viewModelScope.launch {
+            runCatching {
+                val today = LocalDate.now().toEpochDay()
+                val existing = habitCompletionRepository.getByHabitAndDate(habit.id, today)
+                if (existing == null) {
+                    insertCompletion(habit.id, today, CompletionStatus.SKIPPED)
+                } else {
+                    habitCompletionRepository.update(
+                        existing.copy(status = CompletionStatus.SKIPPED)
+                    )
+                }
+            }.onFailure { messagesFlow.emit(R.string.completion_failed) }
+        }
+    }
+
+    fun clearCompletion(habit: Habit) {
+        if (!canMarkToday(habit)) return
+        viewModelScope.launch {
+            runCatching {
+                val today = LocalDate.now().toEpochDay()
+                habitCompletionRepository.getByHabitAndDate(habit.id, today)?.let { existing ->
+                    habitCompletionRepository.deleteById(existing.id)
+                }
+            }.onFailure { messagesFlow.emit(R.string.completion_failed) }
+        }
+    }
+
+    private suspend fun insertCompletion(habitId: Long, date: Long, status: CompletionStatus) {
+        habitCompletionRepository.insert(
+            HabitCompletion(habitId = habitId, date = date, status = status)
+        )
+    }
+
+    private fun canMarkToday(habit: Habit): Boolean {
+        val today = LocalDate.now()
+        return habit.isActive && habit.isScheduledOn(today)
+    }
+
     private fun buildState(currentMode: HomeMode, data: HomeData): HomeUiState {
         val today = LocalDate.now()
+        val zone = ZoneId.systemDefault()
+        val todayEpochDay = today.toEpochDay()
+        val todayStatuses = data.completions
+            .filter { it.date == todayEpochDay }
+            .associate { it.habitId to it.status }
+        val completionsByHabit = data.completions.groupBy { it.habitId }
         val scheduledToday = data.habits.filter { it.isActive && it.isScheduledOn(today) }
         val visible = if (currentMode == HomeMode.TODAY) scheduledToday else data.habits
+        val streaks: Map<Long, HabitStreak> = data.habits.associate { habit ->
+            habit.id to calculateHabitStreak(
+                habit = habit,
+                completions = completionsByHabit[habit.id].orEmpty(),
+                today = today,
+                zone = zone
+            )
+        }
+        val progress: DayProgress = calculateDayProgress(
+            scheduledToday.map { habit -> todayStatuses[habit.id] }
+        )
         return HomeUiState(
             isLoading = false,
             isError = data.isError,
             mode = currentMode,
             groups = if (data.isError) emptyList() else groupHabits(visible, data.categories),
-            todayPlanned = scheduledToday.size,
+            todayStatuses = if (data.isError) emptyMap() else todayStatuses,
+            streaks = if (data.isError) emptyMap() else streaks,
+            progress = if (data.isError) DayProgress() else progress,
             totalCount = data.habits.size,
             activeCount = data.habits.count { it.isActive },
             pausedCount = data.habits.count { !it.isActive }
@@ -116,7 +212,8 @@ class HomeViewModel(
             initializer {
                 HomeViewModel(
                     habitRepository = container.habitRepository,
-                    habitCategoryRepository = container.habitCategoryRepository
+                    habitCategoryRepository = container.habitCategoryRepository,
+                    habitCompletionRepository = container.habitCompletionRepository
                 )
             }
         }

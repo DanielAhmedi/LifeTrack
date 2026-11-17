@@ -60,6 +60,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringArrayResource
@@ -97,6 +98,7 @@ fun HabitEditorScreen(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
+    val resources = LocalResources.current
     val container = (context.applicationContext as LifeTrackApplication).container
     val viewModel: HabitEditorViewModel =
         viewModel(factory = HabitEditorViewModel.factory(container, habitId))
@@ -111,7 +113,7 @@ fun HabitEditorScreen(
             when (event) {
                 is HabitEditorEvent.Finished -> onFinished(event.messageRes)
                 is HabitEditorEvent.Error ->
-                    snackbarHostState.showSnackbar(context.getString(event.messageRes))
+                    snackbarHostState.showSnackbar(resources.getString(event.messageRes))
             }
         }
     }

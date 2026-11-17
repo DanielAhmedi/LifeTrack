@@ -29,8 +29,8 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 sealed interface HabitEditorEvent {
-    data class Finished(@StringRes val messageRes: Int) : HabitEditorEvent
-    data class Error(@StringRes val messageRes: Int) : HabitEditorEvent
+    data class Finished(@param:StringRes val messageRes: Int) : HabitEditorEvent
+    data class Error(@param:StringRes val messageRes: Int) : HabitEditorEvent
 }
 
 class HabitEditorViewModel(

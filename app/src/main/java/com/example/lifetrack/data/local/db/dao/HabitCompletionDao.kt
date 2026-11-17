@@ -18,8 +18,17 @@ interface HabitCompletionDao {
     @Query("SELECT * FROM habit_completions WHERE habit_id = :habitId AND date = :date LIMIT 1")
     suspend fun getByHabitAndDate(habitId: Long, date: Long): HabitCompletionEntity?
 
+    @Query("SELECT * FROM habit_completions ORDER BY date ASC")
+    fun observeAll(): Flow<List<HabitCompletionEntity>>
+
     @Query("SELECT * FROM habit_completions WHERE habit_id = :habitId ORDER BY date DESC")
     fun observeByHabit(habitId: Long): Flow<List<HabitCompletionEntity>>
+
+    @Query(
+        "SELECT * FROM habit_completions " +
+            "WHERE date BETWEEN :fromDate AND :toDate ORDER BY date ASC"
+    )
+    fun observeBetween(fromDate: Long, toDate: Long): Flow<List<HabitCompletionEntity>>
 
     @Query(
         "SELECT * FROM habit_completions " +

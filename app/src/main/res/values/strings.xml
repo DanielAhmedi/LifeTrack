@@ -47,6 +47,38 @@
     <string name="delete_habit_title">Удалить привычку?</string>
     <string name="delete_habit_message">Вся история выполнения будет удалена без возможности восстановления</string>
 
+    <string name="action_mark_done">Отметить выполнение</string>
+    <string name="action_mark_skipped">Отметить пропуск</string>
+    <string name="action_clear_completion">Снять отметку</string>
+    <string name="action_skip">Пропуск</string>
+    <string name="action_clear_short">Снять</string>
+    <string name="action_today">Сегодня</string>
+    <string name="action_previous_month">Предыдущий месяц</string>
+    <string name="action_next_month">Следующий месяц</string>
+    <string name="status_done">Выполнено</string>
+    <string name="status_skipped">Пропущено</string>
+    <string name="status_not_marked">Не отмечено</string>
+    <string name="status_not_scheduled">Не запланировано</string>
+    <string name="completion_failed">Не удалось сохранить отметку</string>
+    <string name="habit_streak_max">Макс. %1$d</string>
+    <string name="habit_streak_description">Текущая серия: %1$d</string>
+    <string name="home_progress_skipped_pending">Пропущено: %1$d · Не отмечено: %2$d</string>
+    <string name="home_all_done">Все привычки выполнены</string>
+
+    <string name="calendar_filter_all">Все привычки</string>
+    <string name="calendar_has_no_marks">В этом месяце ещё нет отметок</string>
+    <string name="calendar_empty_title">Нет данных для отображения</string>
+    <string name="calendar_empty_description">Создайте привычку, чтобы отмечать выполнение</string>
+    <string name="calendar_load_error_title">Не удалось загрузить календарь</string>
+    <string name="calendar_load_error_description">Проверьте свободное место и повторите попытку</string>
+    <string name="calendar_no_habits_for_day">На этот день привычек нет</string>
+    <string name="calendar_legend_done">Все выполнены</string>
+    <string name="calendar_legend_partial">Частично</string>
+    <string name="calendar_legend_skipped">Есть пропуски</string>
+    <string name="calendar_legend_none">Нет отметок</string>
+    <string name="calendar_day_description">%1$s, выполнено %2$d из %3$d привычек</string>
+    <string name="calendar_day_description_empty">%1$s, нет запланированных привычек</string>
+
     <string name="editor_title_new">Новая привычка</string>
     <string name="editor_title_edit">Редактирование</string>
     <string name="editor_section_main">Основное</string>

@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -41,13 +42,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.lifetrack.LifeTrackApplication
 import com.example.lifetrack.R
+import com.example.lifetrack.domain.model.CompletionStatus
 import com.example.lifetrack.domain.model.Habit
+import com.example.lifetrack.domain.progress.HabitStreak
 import com.example.lifetrack.ui.components.EmptyState
 import com.example.lifetrack.ui.components.HabitCard
 import java.time.LocalDate
@@ -55,7 +59,6 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 private const val NO_CATEGORY_KEY = 0L
-private const val COMPLETED_TODAY = 0
 private val HomeDateFormatter: DateTimeFormatter =
     DateTimeFormatter.ofPattern("d MMMM, EEEE", Locale.forLanguageTag("ru"))
 
@@ -70,6 +73,7 @@ fun HomeScreen(
     onMessageShown: () -> Unit = {}
 ) {
     val context = LocalContext.current
+    val resources = LocalResources.current
     val container = (context.applicationContext as LifeTrackApplication).container
     val viewModel: HomeViewModel = viewModel(factory = HomeViewModel.factory(container))
     val uiState by viewModel.uiState.collectAsState()
@@ -78,14 +82,14 @@ fun HomeScreen(
 
     LaunchedEffect(Unit) {
         viewModel.messages.collect { resId ->
-            snackbarHostState.showSnackbar(context.getString(resId))
+            snackbarHostState.showSnackbar(resources.getString(resId))
         }
     }
 
     LaunchedEffect(messageRes) {
         if (messageRes != null) {
             onMessageShown()
-            snackbarHostState.showSnackbar(context.getString(messageRes))
+            snackbarHostState.showSnackbar(resources.getString(messageRes))
         }
     }
 
@@ -114,7 +118,10 @@ fun HomeScreen(
                 onCreateHabit = onCreateHabit,
                 onHabitClick = onEditHabit,
                 onToggleActive = viewModel::toggleActive,
-                onDeleteRequest = { habitToDelete = it }
+                onDeleteRequest = { habitToDelete = it },
+                onToggleCompletion = viewModel::toggleDone,
+                onMarkSkipped = viewModel::markSkipped,
+                onClearCompletion = viewModel::clearCompletion
             )
         }
     }
@@ -138,7 +145,10 @@ private fun ColumnScope.HomeContent(
     onCreateHabit: () -> Unit,
     onHabitClick: (Long) -> Unit,
     onToggleActive: (Habit) -> Unit,
-    onDeleteRequest: (Habit) -> Unit
+    onDeleteRequest: (Habit) -> Unit,
+    onToggleCompletion: (Habit) -> Unit,
+    onMarkSkipped: (Habit) -> Unit,
+    onClearCompletion: (Habit) -> Unit
 ) {
     when {
         state.isError -> Box(
@@ -189,9 +199,15 @@ private fun ColumnScope.HomeContent(
             } else {
                 HabitList(
                     groups = state.groups,
+                    mode = state.mode,
+                    todayStatuses = state.todayStatuses,
+                    streaks = state.streaks,
                     onHabitClick = onHabitClick,
                     onToggleActive = onToggleActive,
                     onDeleteRequest = onDeleteRequest,
+                    onToggleCompletion = onToggleCompletion,
+                    onMarkSkipped = onMarkSkipped,
+                    onClearCompletion = onClearCompletion,
                     modifier = Modifier.weight(1f)
                 )
             }
@@ -269,37 +285,66 @@ private fun HomeSummary(state: HomeUiState) {
             color = MaterialTheme.colorScheme.surfaceVariant
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
-                if (state.todayPlanned == 0) {
+                val progress = state.progress
+                if (!progress.hasPlanned) {
                     Text(
                         text = stringResource(R.string.home_no_habits_today),
                         style = MaterialTheme.typography.bodyMedium
                     )
                 } else {
-                    val progress = COMPLETED_TODAY.toFloat() / state.todayPlanned
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
                             text = stringResource(
                                 R.string.home_progress,
-                                COMPLETED_TODAY,
-                                state.todayPlanned
+                                progress.done,
+                                progress.expected
                             ),
                             style = MaterialTheme.typography.bodyMedium,
                             modifier = Modifier.weight(1f)
                         )
                         Text(
-                            text = "${(progress * 100).toInt()} %",
+                            text = "${progress.percent} %",
                             style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                     Spacer(modifier = Modifier.height(8.dp))
                     LinearProgressIndicator(
-                        progress = { progress },
+                        progress = { progress.percent / 100f },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(8.dp),
                         trackColor = MaterialTheme.colorScheme.surface
                     )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = stringResource(
+                            R.string.home_progress_skipped_pending,
+                            progress.skipped,
+                            progress.pending
+                        ),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    if (progress.percent == 100) {
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.ic_check),
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Text(
+                                text = stringResource(R.string.home_all_done),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -330,9 +375,15 @@ private fun HomeLoadingState() {
 @Composable
 private fun HabitList(
     groups: List<HabitGroup>,
+    mode: HomeMode,
+    todayStatuses: Map<Long, CompletionStatus>,
+    streaks: Map<Long, HabitStreak>,
     onHabitClick: (Long) -> Unit,
     onToggleActive: (Habit) -> Unit,
     onDeleteRequest: (Habit) -> Unit,
+    onToggleCompletion: (Habit) -> Unit,
+    onMarkSkipped: (Habit) -> Unit,
+    onClearCompletion: (Habit) -> Unit,
     modifier: Modifier = Modifier
 ) {
     LazyColumn(
@@ -349,7 +400,13 @@ private fun HabitList(
                     habit = habit,
                     onClick = { onHabitClick(habit.id) },
                     onToggleActive = { onToggleActive(habit) },
-                    onDelete = { onDeleteRequest(habit) }
+                    onDelete = { onDeleteRequest(habit) },
+                    status = todayStatuses[habit.id],
+                    streak = streaks[habit.id] ?: HabitStreak(),
+                    showCompletion = mode == HomeMode.TODAY && habit.isActive,
+                    onToggleCompletion = { onToggleCompletion(habit) },
+                    onMarkSkipped = { onMarkSkipped(habit) },
+                    onClearCompletion = { onClearCompletion(habit) }
                 )
             }
         }

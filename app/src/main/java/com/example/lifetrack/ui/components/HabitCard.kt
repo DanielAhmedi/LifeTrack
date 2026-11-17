@@ -36,7 +36,9 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.lifetrack.R
+import com.example.lifetrack.domain.model.CompletionStatus
 import com.example.lifetrack.domain.model.Habit
+import com.example.lifetrack.domain.progress.HabitStreak
 import com.example.lifetrack.ui.habit.HabitIcons
 import com.example.lifetrack.ui.habit.habitColor
 import com.example.lifetrack.ui.habit.habitContainerColor
@@ -48,10 +50,21 @@ fun HabitCard(
     onClick: () -> Unit,
     onToggleActive: () -> Unit,
     onDelete: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    status: CompletionStatus? = null,
+    streak: HabitStreak = HabitStreak(),
+    showCompletion: Boolean = false,
+    onToggleCompletion: () -> Unit = {},
+    onMarkSkipped: () -> Unit = {},
+    onClearCompletion: () -> Unit = {}
 ) {
     var menuExpanded by remember { mutableStateOf(false) }
     val menuDescription = stringResource(R.string.action_habit_menu)
+    val completionDescription = when (status) {
+        CompletionStatus.DONE -> stringResource(R.string.status_done)
+        CompletionStatus.SKIPPED -> stringResource(R.string.status_skipped)
+        null -> stringResource(R.string.status_not_marked)
+    }
     val description = habit.description?.takeIf { it.isNotBlank() }
     val containerColor = if (habit.isActive) {
         MaterialTheme.colorScheme.surface
@@ -99,19 +112,33 @@ fun HabitCard(
                 habit = habit,
                 description = description,
                 titleColor = titleColor,
+                status = status,
+                streak = streak,
                 modifier = Modifier
                     .weight(1f)
                     .padding(horizontal = 12.dp)
             )
             HabitCardMenu(
                 habit = habit,
+                status = status,
                 menuDescription = menuDescription,
                 expanded = menuExpanded,
+                showCompletion = showCompletion,
                 onExpandedChange = { menuExpanded = it },
                 onEdit = onClick,
+                onToggleCompletion = onToggleCompletion,
+                onMarkSkipped = onMarkSkipped,
+                onClearCompletion = onClearCompletion,
                 onToggleActive = onToggleActive,
                 onDelete = onDelete
             )
+            if (showCompletion) {
+                HabitCompletionCircle(
+                    status = status,
+                    contentDescription = completionDescription,
+                    onClick = onToggleCompletion
+                )
+            }
         }
     }
 }
@@ -122,13 +149,19 @@ private fun HabitCardTexts(
     habit: Habit,
     description: String?,
     titleColor: androidx.compose.ui.graphics.Color,
+    status: CompletionStatus?,
+    streak: HabitStreak,
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier) {
         Text(
             text = habit.name,
             style = MaterialTheme.typography.titleMedium,
-            color = titleColor,
+            color = if (status == CompletionStatus.DONE) {
+                MaterialTheme.colorScheme.onSurfaceVariant
+            } else {
+                titleColor
+            },
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
         )
@@ -148,13 +181,49 @@ private fun HabitCardTexts(
             Text(
                 text = habitFrequencyText(habit),
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f, fill = false)
             )
+            if (streak.current > 0) {
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_streak_fire),
+                    contentDescription = stringResource(
+                        R.string.habit_streak_description,
+                        streak.current
+                    ),
+                    tint = MaterialTheme.colorScheme.secondary,
+                    modifier = Modifier.size(14.dp)
+                )
+                Text(
+                    text = streak.current.toString(),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.secondary
+                )
+            }
+            if (streak.max > 0) {
+                Text(
+                    text = stringResource(R.string.habit_streak_max, streak.max),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1
+                )
+            }
+            if (status == CompletionStatus.SKIPPED) {
+                Text(
+                    text = stringResource(R.string.status_skipped),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error,
+                    maxLines = 1
+                )
+            }
             if (!habit.isActive) {
                 Text(
                     text = stringResource(R.string.label_paused),
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1
                 )
             }
         }
@@ -164,10 +233,15 @@ private fun HabitCardTexts(
 @Composable
 private fun HabitCardMenu(
     habit: Habit,
+    status: CompletionStatus?,
     menuDescription: String,
     expanded: Boolean,
+    showCompletion: Boolean,
     onExpandedChange: (Boolean) -> Unit,
     onEdit: () -> Unit,
+    onToggleCompletion: () -> Unit,
+    onMarkSkipped: () -> Unit,
+    onClearCompletion: () -> Unit,
     onToggleActive: () -> Unit,
     onDelete: () -> Unit
 ) {
@@ -182,6 +256,50 @@ private fun HabitCardMenu(
             expanded = expanded,
             onDismissRequest = { onExpandedChange(false) }
         ) {
+            if (showCompletion) {
+                DropdownMenuItem(
+                    text = {
+                        Text(
+                            text = stringResource(
+                                if (status == CompletionStatus.DONE) {
+                                    R.string.action_clear_completion
+                                } else {
+                                    R.string.action_mark_done
+                                }
+                            )
+                        )
+                    },
+                    onClick = {
+                        onExpandedChange(false)
+                        if (status == CompletionStatus.DONE) {
+                            onClearCompletion()
+                        } else {
+                            onToggleCompletion()
+                        }
+                    }
+                )
+                DropdownMenuItem(
+                    text = {
+                        Text(
+                            text = stringResource(
+                                if (status == CompletionStatus.SKIPPED) {
+                                    R.string.action_clear_completion
+                                } else {
+                                    R.string.action_mark_skipped
+                                }
+                            )
+                        )
+                    },
+                    onClick = {
+                        onExpandedChange(false)
+                        if (status == CompletionStatus.SKIPPED) {
+                            onClearCompletion()
+                        } else {
+                            onMarkSkipped()
+                        }
+                    }
+                )
+            }
             DropdownMenuItem(
                 text = { Text(text = stringResource(R.string.action_edit)) },
                 onClick = {
