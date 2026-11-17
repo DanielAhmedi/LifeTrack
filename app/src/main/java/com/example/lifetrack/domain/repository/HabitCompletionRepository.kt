@@ -11,7 +11,11 @@ interface HabitCompletionRepository {
 
     suspend fun getByHabit(habitId: Long): List<HabitCompletion>
 
+    fun observeAll(): Flow<List<HabitCompletion>>
+
     fun observeByHabit(habitId: Long): Flow<List<HabitCompletion>>
+
+    fun observeBetween(fromDate: Long, toDate: Long): Flow<List<HabitCompletion>>
 
     fun observeByHabitBetween(
         habitId: Long,

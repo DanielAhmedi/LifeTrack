@@ -21,6 +21,19 @@ class HabitCompletionRepositoryImpl(
     override suspend fun getByHabit(habitId: Long): List<HabitCompletion> =
         habitCompletionDao.getByHabit(habitId).map { it.toDomain() }
 
+    override fun observeAll(): Flow<List<HabitCompletion>> =
+        habitCompletionDao.observeAll().map { completions ->
+            completions.map { it.toDomain() }
+        }
+
+    override fun observeBetween(
+        fromDate: Long,
+        toDate: Long
+    ): Flow<List<HabitCompletion>> =
+        habitCompletionDao.observeBetween(fromDate, toDate).map { completions ->
+            completions.map { it.toDomain() }
+        }
+
     override fun observeByHabit(habitId: Long): Flow<List<HabitCompletion>> =
         habitCompletionDao.observeByHabit(habitId).map { completions ->
             completions.map { it.toDomain() }

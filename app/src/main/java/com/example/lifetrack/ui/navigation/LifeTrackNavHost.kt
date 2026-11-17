@@ -107,7 +107,11 @@ fun LifeTrackNavHost(
             )
         }
         composable(Routes.CALENDAR) {
-            CalendarScreen(onOpenSettings = openSettings)
+            CalendarScreen(
+                onOpenSettings = openSettings,
+                onCreateHabit = { navController.navigate(Routes.habitEditorRoute()) },
+                onEditHabit = { habitId -> navController.navigate(Routes.habitEditorRoute(habitId)) }
+            )
         }
         composable(Routes.STATISTICS) {
             StatisticsScreen(onOpenSettings = openSettings)
