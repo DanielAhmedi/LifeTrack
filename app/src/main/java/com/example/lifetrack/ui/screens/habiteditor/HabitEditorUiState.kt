@@ -46,6 +46,8 @@ data class HabitEditorUiState(
     val name: String = "",
     val description: String = "",
     val categoryId: Long? = null,
+    val suggestedCategoryId: Long? = null,
+    val categoryChosenManually: Boolean = false,
     val icon: String = HabitIcons.DEFAULT_KEY,
     val color: Int = DefaultHabitColor,
     val colorChangedByUser: Boolean = false,
@@ -59,6 +61,12 @@ data class HabitEditorUiState(
 ) {
     val isFrequencyChanged: Boolean
         get() = initialFrequencyType != null && initialFrequencyType != frequencyType
+
+    val suggestedCategory: HabitCategory?
+        get() = categories.firstOrNull { it.id == suggestedCategoryId }
+
+    val isCategorySuggested: Boolean
+        get() = suggestedCategory != null && !categoryChosenManually
 
     val draft: HabitDraft
         get() = HabitDraft(

@@ -399,6 +399,16 @@ private fun EditorForm(
             selectedId = state.categoryId,
             onSelect = viewModel::onCategorySelect
         )
+        if (state.isCategorySuggested) {
+            Text(
+                text = stringResource(
+                    R.string.editor_category_auto_hint,
+                    state.suggestedCategory?.name.orEmpty()
+                ),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
         SectionTitle(R.string.editor_section_appearance)
         IconPicker(selectedKey = state.icon, onSelect = viewModel::onIconSelect)
         ColorPicker(selectedColor = state.color, onSelect = viewModel::onColorSelect)

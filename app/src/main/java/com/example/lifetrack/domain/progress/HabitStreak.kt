@@ -17,7 +17,8 @@ fun calculateHabitStreak(
     habit: Habit,
     completions: List<HabitCompletion>,
     today: LocalDate,
-    zone: ZoneId = ZoneId.systemDefault()
+    zone: ZoneId = ZoneId.systemDefault(),
+    from: LocalDate? = null
 ): HabitStreak {
     val createdOn = habit.creationDate(zone)
     if (today.isBefore(createdOn)) return HabitStreak()
@@ -26,7 +27,13 @@ fun calculateHabitStreak(
         .filter { it.date <= today.toEpochDay() }
         .associate { LocalDate.ofEpochDay(it.date) to it.status }
 
-    val maxStreak = calculateMaxStreak(habit, statuses, createdOn, today)
+    val maxStreak = calculateMaxStreak(
+        habit = habit,
+        statuses = statuses,
+        createdOn = createdOn,
+        from = if (from != null && from.isAfter(createdOn)) from else createdOn,
+        today = today
+    )
     val currentStreak =
         if (habit.isActive) calculateCurrentStreak(habit, statuses, createdOn, today) else 0
     return HabitStreak(current = currentStreak, max = maxStreak)
@@ -57,11 +64,12 @@ private fun calculateMaxStreak(
     habit: Habit,
     statuses: Map<LocalDate, CompletionStatus>,
     createdOn: LocalDate,
+    from: LocalDate,
     today: LocalDate
 ): Int {
     var maxStreak = 0
     var streak = 0
-    var date = createdOn
+    var date = from
     while (!date.isAfter(today)) {
         if (habit.isScheduledOn(date, createdOn)) {
             if (statuses[date] == CompletionStatus.DONE) {

@@ -8,6 +8,7 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.lifetrack.R
 import com.example.lifetrack.di.AppContainer
+import com.example.lifetrack.domain.category.detectHabitCategory
 import com.example.lifetrack.domain.model.FrequencyType
 import com.example.lifetrack.domain.model.Habit
 import com.example.lifetrack.domain.model.HabitCategory
@@ -59,7 +60,9 @@ class HabitEditorViewModel(
             habitCategoryRepository.observeAll()
                 .catch { state.update { current -> current.copy(isLoadFailed = true) } }
                 .collect { categories ->
-                    state.update { current -> current.copy(categories = categories) }
+                    state.update { current ->
+                        current.copy(categories = categories).withAutoCategory()
+                    }
                 }
         }
         if (habitId > 0) {
@@ -83,7 +86,7 @@ class HabitEditorViewModel(
             current.copy(
                 name = value.take(HabitFormRules.NAME_MAX_LENGTH),
                 nameTouched = true
-            )
+            ).withAutoCategory()
         }
     }
 
@@ -97,6 +100,8 @@ class HabitEditorViewModel(
         state.update { current ->
             current.copy(
                 categoryId = category?.id,
+                suggestedCategoryId = null,
+                categoryChosenManually = true,
                 color = if (!current.colorChangedByUser && category != null) {
                     category.color
                 } else {
@@ -249,6 +254,16 @@ class HabitEditorViewModel(
                     }
                 }
         }
+    }
+
+    private fun HabitEditorUiState.withAutoCategory(): HabitEditorUiState {
+        if (isEditing || categoryChosenManually) return this
+        val suggestion = detectHabitCategory(name, categories)
+        return copy(
+            suggestedCategoryId = suggestion?.id,
+            categoryId = suggestion?.id,
+            color = if (colorChangedByUser) color else suggestion?.color ?: EmptyHabitDraft.color
+        )
     }
 
     companion object {
