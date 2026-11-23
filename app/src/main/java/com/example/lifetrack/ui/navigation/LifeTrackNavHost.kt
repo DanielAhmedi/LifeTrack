@@ -114,7 +114,10 @@ fun LifeTrackNavHost(
             )
         }
         composable(Routes.STATISTICS) {
-            StatisticsScreen(onOpenSettings = openSettings)
+            StatisticsScreen(
+                onOpenSettings = openSettings,
+                onCreateHabit = { navController.navigate(Routes.habitEditorRoute()) }
+            )
         }
         composable(Routes.ACHIEVEMENTS) {
             AchievementsScreen(onOpenSettings = openSettings)
